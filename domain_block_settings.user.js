@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.0
+// @version      0.1.1
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
@@ -15,7 +15,8 @@
 
     // ブロックしたいドメインのリストを設定
     const blockedDomains = [
-        'tsukulink.net'
+        'tsukulink.net',
+        'carcon.co.jp'
         // 必要に応じて追加してください
     ];
 

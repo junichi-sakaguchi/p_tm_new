@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.1
+// @version      0.1.0
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
 // @grant        none
-// @updateURL    https://github.com/junichi-sakaguchi/p_tm_new/raw/refs/heads/main/domain_block_settings.user.js
+// @updateURL    https://github.com/junichi-sakaguchi/p_tm_new/raw/refs/heads/main/domain_block_settings.meta.js
 // @downloadURL  https://github.com/junichi-sakaguchi/p_tm_new/raw/refs/heads/main/domain_block_settings.user.js
 // ==/UserScript==
 
@@ -15,8 +15,7 @@
 
     // ブロックしたいドメインのリストを設定
     const blockedDomains = [
-        'tsukulink.net',
-        'carcon.co.jp'
+        'tsukulink.net'
         // 必要に応じて追加してください
     ];
 

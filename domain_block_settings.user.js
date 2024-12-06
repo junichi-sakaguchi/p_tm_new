@@ -6,7 +6,7 @@
 // @author       plex
 // @match        *://*/*
 // @grant        none
-// @updateURL    https://github.com/junichi-sakaguchi/p_tm_new/raw/refs/heads/main/domain_block_settings.meta.js
+// @updateURL    https://github.com/junichi-sakaguchi/p_tm_new/raw/refs/heads/main/domain_block_settings.user.js
 // @downloadURL  https://github.com/junichi-sakaguchi/p_tm_new/raw/refs/heads/main/domain_block_settings.user.js
 // ==/UserScript==
 

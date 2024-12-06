@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Page Blocker for Specific Word Combinations
 // @namespace    http://tampermonkey.net/
-// @version      0.1.1
+// @version      0.1.2
 // @description  Blocks pages containing specific word combinations
 // @author       You
 // @match        *://*/*
@@ -42,6 +42,19 @@
         '請求'
     ];
 
+    // ページがトップページかどうかをチェック
+    function isTopPage() {
+        const path = window.location.pathname;
+        return path === '/' || path === '/index.html' || path === '/index.php';
+    }
+
+    // フォーム要素の存在チェック
+    function hasFormElements() {
+        return document.getElementsByTagName('form').length > 0 ||
+               document.getElementsByTagName('input').length > 0 ||
+               document.getElementsByTagName('textarea').length > 0;
+    }
+
     // ページ内のテキストを取得
     function getPageText() {
         return document.body.innerText.toLowerCase();
@@ -54,6 +67,11 @@
 
     // メイン処理
     function checkAndBlockPage() {
+        // トップページの場合は、フォーム要素がある場合のみチェックする
+        if (isTopPage() && !hasFormElements()) {
+            return;
+        }
+
         const pageText = getPageText();
         
         // 両方の語群から検出された単語を取得

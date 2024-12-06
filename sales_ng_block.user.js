@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Page Blocker for Specific Word Combinations
 // @namespace    http://tampermonkey.net/
-// @version      0.1.4
+// @version      0.1.5
 // @description  Blocks pages containing specific word combinations
 // @author       You
 // @match        *://*/*
@@ -14,7 +14,7 @@
     // 語群1と語群2の定義
     const wordGroup1 = [
         '勧誘',
-        { word: '営業', exclude: ['営業時間'] },  // 除外パターンを含むオブジェクトに変更
+        { word: '営業', exclude: ['営業時間'] },
         '取引',
         '売り込',
         '売込',
@@ -41,6 +41,69 @@
         '訴訟',
         '請求'
     ];
+
+    // 要素が実際に表示されているかチェック
+    function isElementVisible(element) {
+        if (!element) return false;
+
+        const style = window.getComputedStyle(element);
+        
+        // display: none または visibility: hidden の場合は非表示
+        if (style.display === 'none' || style.visibility === 'hidden') {
+            return false;
+        }
+
+        // 要素のサイズが0の場合は非表示とみなす
+        if (element.offsetWidth === 0 && element.offsetHeight === 0) {
+            return false;
+        }
+
+        // 要素の位置が画面外かどうかをチェック
+        const rect = element.getBoundingClientRect();
+        if (rect.top === 0 && rect.left === 0 && rect.width === 0 && rect.height === 0) {
+            return false;
+        }
+
+        // 親要素も含めて表示状態をチェック
+        let parent = element.parentElement;
+        while (parent) {
+            const parentStyle = window.getComputedStyle(parent);
+            if (parentStyle.display === 'none' || parentStyle.visibility === 'hidden') {
+                return false;
+            }
+            parent = parent.parentElement;
+        }
+
+        return true;
+    }
+
+    // 表示されているテキストノードのみを取得
+    function getVisibleTextNodes(element = document.body) {
+        const textNodes = [];
+        const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            {
+                acceptNode: function(node) {
+                    // テキストが空白のみの場合はスキップ
+                    if (!node.textContent.trim()) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    // 親要素が表示されている場合のみ受け入れ
+                    if (isElementVisible(node.parentElement)) {
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                    return NodeFilter.FILTER_REJECT;
+                }
+            }
+        );
+
+        let node;
+        while (node = walker.nextNode()) {
+            textNodes.push(node.textContent);
+        }
+        return textNodes;
+    }
 
     // ページがトップページかどうかをチェック
     function isTopPage() {
@@ -95,24 +158,17 @@
         return false;
     }
 
-    // ページ内のテキストを取得
-    function getPageText() {
-        return document.body.innerText.toLowerCase();
-    }
-
     // 指定された語群から検出された単語を取得（除外パターンを考慮）
-    function getDetectedWords(text, wordGroup) {
+    function getDetectedWords(visibleText, wordGroup) {
         return wordGroup.filter(wordItem => {
             if (typeof wordItem === 'string') {
-                return text.includes(wordItem);
+                return visibleText.includes(wordItem);
             } else {
-                // 除外パターンをチェック
-                const isWordPresent = text.includes(wordItem.word);
+                const isWordPresent = visibleText.includes(wordItem.word);
                 if (!isWordPresent) return false;
 
-                // 除外パターンに一致するものがあれば、その単語は検出しない
                 return !wordItem.exclude.some(excludePattern => 
-                    text.includes(excludePattern)
+                    visibleText.includes(excludePattern)
                 );
             }
         }).map(wordItem => typeof wordItem === 'string' ? wordItem : wordItem.word);
@@ -124,10 +180,11 @@
             return;
         }
 
-        const pageText = getPageText();
+        // 表示されているテキストのみを取得して結合
+        const visibleText = getVisibleTextNodes().join(' ').toLowerCase();
         
-        const detectedWords1 = getDetectedWords(pageText, wordGroup1);
-        const detectedWords2 = getDetectedWords(pageText, wordGroup2);
+        const detectedWords1 = getDetectedWords(visibleText, wordGroup1);
+        const detectedWords2 = getDetectedWords(visibleText, wordGroup2);
         
         if (detectedWords1.length > 0 && detectedWords2.length > 0) {
             document.body.innerHTML = '';

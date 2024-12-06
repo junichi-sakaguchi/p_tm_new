@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Page Blocker for Specific Word Combinations
 // @namespace    http://tampermonkey.net/
-// @version      0.1.2
+// @version      0.1.3
 // @description  Blocks pages containing specific word combinations
 // @author       You
 // @match        *://*/*
@@ -48,11 +48,60 @@
         return path === '/' || path === '/index.html' || path === '/index.php';
     }
 
-    // フォーム要素の存在チェック
-    function hasFormElements() {
-        return document.getElementsByTagName('form').length > 0 ||
-               document.getElementsByTagName('input').length > 0 ||
-               document.getElementsByTagName('textarea').length > 0;
+    // 検索フォーム関連の属性や文字列を判定
+    function isSearchRelated(element) {
+        const searchKeywords = ['search', 'query', 'keyword', 'find', 'q', 'キーワード', '検索'];
+        
+        // 要素の属性をチェック
+        const attributes = [
+            element.id?.toLowerCase() || '',
+            element.name?.toLowerCase() || '',
+            element.className?.toLowerCase() || '',
+            element.placeholder?.toLowerCase() || '',
+            element.type?.toLowerCase() || ''
+        ];
+
+        // 親要素のform要素の属性もチェック
+        const parentForm = element.closest('form');
+        if (parentForm) {
+            attributes.push(
+                parentForm.id?.toLowerCase() || '',
+                parentForm.className?.toLowerCase() || '',
+                parentForm.action?.toLowerCase() || ''
+            );
+        }
+
+        // いずれかの属性に検索関連のキーワードが含まれているかチェック
+        return attributes.some(attr => 
+            searchKeywords.some(keyword => attr.includes(keyword))
+        );
+    }
+
+    // フォーム要素の存在チェック（検索フォームを除外）
+    function hasNonSearchFormElements() {
+        // form要素のチェック
+        const forms = document.getElementsByTagName('form');
+        for (const form of forms) {
+            // 明らかに検索フォームと判断できる場合はスキップ
+            if (isSearchRelated(form)) continue;
+            return true;
+        }
+
+        // input要素のチェック
+        const inputs = document.getElementsByTagName('input');
+        for (const input of inputs) {
+            // 検索関連の要素はスキップ
+            if (isSearchRelated(input)) continue;
+            // hidden inputはスキップ
+            if (input.type === 'hidden') continue;
+            return true;
+        }
+
+        // textarea要素のチェック（通常検索フォームには使用されない）
+        const textareas = document.getElementsByTagName('textarea');
+        if (textareas.length > 0) return true;
+
+        return false;
     }
 
     // ページ内のテキストを取得
@@ -67,8 +116,8 @@
 
     // メイン処理
     function checkAndBlockPage() {
-        // トップページの場合は、フォーム要素がある場合のみチェックする
-        if (isTopPage() && !hasFormElements()) {
+        // トップページの場合は、検索フォーム以外のフォーム要素がある場合のみチェックする
+        if (isTopPage() && !hasNonSearchFormElements()) {
             return;
         }
 

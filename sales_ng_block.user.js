@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Optimized Page Blocker for Specific Word Combinations
+// @name         Timing-Optimized Page Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.9
-// @description  Performance-optimized page blocker with dynamic content detection
+// @version      0.1.10
+// @description  Performance and timing optimized page blocker
 // @author       You
 // @match        *://*/*
 // @grant        none
@@ -40,13 +40,10 @@
         '請求'
     ];
 
-    // ブロック状態を追跡
     let isBlocked = false;
-    
-    // デバウンス用のタイマーID
+    let isInitialized = false;
     let debounceTimer = null;
 
-    // デバウンス関数
     function debounce(func, wait) {
         return function executedFunction(...args) {
             if (debounceTimer) {
@@ -59,59 +56,57 @@
         };
     }
 
-    // テキストコンテンツを取得する関数（最適化版）
     function getAllTextContent() {
         const textParts = [];
         
-        // ページ全体のテキストを取得（非表示要素を除外）
-        const walker = document.createTreeWalker(
-            document.body,
-            NodeFilter.SHOW_TEXT,
-            {
-                acceptNode: function(node) {
-                    // 非表示要素のテキストは除外
-                    let parent = node.parentElement;
-                    while (parent) {
-                        const style = window.getComputedStyle(parent);
-                        if (style.display === 'none' || 
-                            style.visibility === 'hidden' || 
-                            style.opacity === '0') {
-                            return NodeFilter.FILTER_REJECT;
+        try {
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        let parent = node.parentElement;
+                        while (parent) {
+                            const style = window.getComputedStyle(parent);
+                            if (style.display === 'none' || 
+                                style.visibility === 'hidden' || 
+                                style.opacity === '0') {
+                                return NodeFilter.FILTER_REJECT;
+                            }
+                            parent = parent.parentElement;
                         }
-                        parent = parent.parentElement;
+                        return NodeFilter.FILTER_ACCEPT;
                     }
-                    return NodeFilter.FILTER_ACCEPT;
-                }
-            },
-            false
-        );
+                },
+                false
+            );
 
-        let node;
-        while (node = walker.nextNode()) {
-            const text = node.textContent.trim();
-            if (text) {
-                textParts.push(text);
+            let node;
+            while (node = walker.nextNode()) {
+                const text = node.textContent.trim();
+                if (text) {
+                    textParts.push(text);
+                }
             }
-        }
-        
-        // metaタグの description を追加
-        const metaDescription = document.querySelector('meta[name="description"]');
-        if (metaDescription) {
-            const content = metaDescription.getAttribute('content');
-            if (content) {
-                textParts.push(content);
+            
+            const metaDescription = document.querySelector('meta[name="description"]');
+            if (metaDescription) {
+                const content = metaDescription.getAttribute('content');
+                if (content) {
+                    textParts.push(content);
+                }
             }
-        }
-        
-        // titleタグの内容を追加
-        if (document.title) {
-            textParts.push(document.title);
+            
+            if (document.title) {
+                textParts.push(document.title);
+            }
+        } catch (error) {
+            console.error('Error getting text content:', error);
         }
         
         return textParts.join(' ').toLowerCase();
     }
 
-    // 指定された語群から検出された単語を取得（最適化版）
     function getDetectedWords(text, wordGroup) {
         const detected = [];
         for (const wordItem of wordGroup) {
@@ -130,14 +125,22 @@
         return detected;
     }
 
-    // ページをブロックする処理（最適化版）
     function blockPage(detectedWords1, detectedWords2) {
-        if (isBlocked) return; // 既にブロック済みの場合は処理しない
+        if (isBlocked) return;
         isBlocked = true;
 
-        // 元のコンテンツを非表示にする（完全に削除せず）
-        const originalContent = document.body.innerHTML;
-        document.body.style.display = 'none';
+        // オリジナルのコンテンツを保持
+        const originalDisplay = document.body.style.display;
+        const blockContainer = document.createElement('div');
+        blockContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            z-index: 999999;
+        `;
         
         const blockMessage = document.createElement('div');
         blockMessage.style.cssText = `
@@ -151,7 +154,7 @@
             border-radius: 5px;
             text-align: center;
             font-family: Arial, sans-serif;
-            z-index: 9999;
+            z-index: 1000000;
         `;
         
         blockMessage.innerHTML = `
@@ -164,25 +167,12 @@
             </p>
         `;
         
-        // 新しいコンテナを作成してメッセージを追加
-        const container = document.createElement('div');
-        container.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: white;
-            z-index: 9998;
-        `;
-        
-        document.body.appendChild(container);
+        document.body.appendChild(blockContainer);
         document.body.appendChild(blockMessage);
     }
 
-    // メイン処理（最適化版）
     const checkAndBlockPage = debounce(() => {
-        if (isBlocked) return; // 既にブロック済みの場合はチェックしない
+        if (isBlocked || !isInitialized) return;
         
         const visibleText = getAllTextContent();
         const detectedWords1 = getDetectedWords(visibleText, wordGroup1);
@@ -193,14 +183,10 @@
             console.log('Detected words from group 2:', detectedWords2);
             blockPage(detectedWords1, detectedWords2);
         }
-    }, 300); // 300ミリ秒のデバウンス
+    }, 500);
 
-    // MutationObserverの設定（最適化版）
     const observer = new MutationObserver((mutations) => {
-        if (isBlocked) {
-            observer.disconnect(); // ブロック済みの場合は監視を停止
-            return;
-        }
+        if (isBlocked || !isInitialized) return;
         
         let shouldCheck = false;
         for (const mutation of mutations) {
@@ -215,17 +201,16 @@
         }
     });
 
-    // 監視の開始
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true
+    // ページの完全な読み込み後に初期化
+    window.addEventListener('load', () => {
+        isInitialized = true;
+        setTimeout(() => {
+            checkAndBlockPage();
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                characterData: true
+            });
+        }, 1000); // 1秒待ってから初期チェックを実行
     });
-
-    // 初回チェック
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', checkAndBlockPage);
-    } else {
-        checkAndBlockPage();
-    }
 })();

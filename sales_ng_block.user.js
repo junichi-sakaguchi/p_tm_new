@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Page Blocker for Specific Word Combinations
 // @namespace    http://tampermonkey.net/
-// @version      0.1.0
+// @version      0.1.1
 // @description  Blocks pages containing specific word combinations
 // @author       You
 // @match        *://*/*
@@ -47,17 +47,21 @@
         return document.body.innerText.toLowerCase();
     }
 
-    // 指定された語群の単語が含まれているかチェック
-    function containsAnyWord(text, wordGroup) {
-        return wordGroup.some(word => text.includes(word));
+    // 指定された語群から検出された単語を取得
+    function getDetectedWords(text, wordGroup) {
+        return wordGroup.filter(word => text.includes(word));
     }
 
     // メイン処理
     function checkAndBlockPage() {
         const pageText = getPageText();
         
+        // 両方の語群から検出された単語を取得
+        const detectedWords1 = getDetectedWords(pageText, wordGroup1);
+        const detectedWords2 = getDetectedWords(pageText, wordGroup2);
+        
         // 両方の語群から単語が見つかった場合
-        if (containsAnyWord(pageText, wordGroup1) && containsAnyWord(pageText, wordGroup2)) {
+        if (detectedWords1.length > 0 && detectedWords2.length > 0) {
             // ページの内容を非表示にする
             document.body.innerHTML = '';
             
@@ -79,6 +83,11 @@
             blockMessage.innerHTML = `
                 <h2 style="color: #721c24; margin-bottom: 10px;">こちらの企業は営業禁止です。</h2>
                 <p style="color: #721c24; margin: 0;">送付結果を「送付失敗」にして、送付失敗理由に「営業禁止」と記載してください</p>
+                <p style="color: #721c24; margin-top: 15px; font-size: 12px;">
+                    検出された単語:<br>
+                    語群1: ${detectedWords1.join(', ')}<br>
+                    語群2: ${detectedWords2.join(', ')}
+                </p>
             `;
             
             // 警告メッセージをページに追加

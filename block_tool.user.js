@@ -16,8 +16,8 @@
 
     // ブロックするドメインのリスト
     const blockedDomains = [
-        'example.com',
-        'example.org',
+        'tsukulink.net',
+        'carcon.co.jp'
         // 必要に応じてドメインを追加
     ];
 

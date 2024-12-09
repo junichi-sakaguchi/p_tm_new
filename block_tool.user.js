@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Path and Form Aware Page Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.4
+// @version      0.1.5
 // @description  blocker tool
 // @author       You
 // @match        *://*/*

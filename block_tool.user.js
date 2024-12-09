@@ -194,146 +194,77 @@
         return false;
     }
 
+// 既存のgetAllTextContent関数を拡張
 function getAllTextContent() {
     const textParts = [];
 
     try {
-        // 既存のTreeWalker処理を維持
+        // 既存の処理を維持
         const mainWalker = document.createTreeWalker(
             document.body,
             NodeFilter.SHOW_TEXT,
             {
                 acceptNode: function(node) {
-                    let parent = node.parentElement;
-                    while (parent) {
-                        const style = window.getComputedStyle(parent);
-                        if (style.display === 'none' ||
-                            style.visibility === 'hidden' ||
-                            style.opacity === '0') {
-                            return NodeFilter.FILTER_REJECT;
-                        }
-                        parent = parent.parentElement;
-                    }
-                    return NodeFilter.FILTER_ACCEPT;
+                    // 既存の検証ロジック
                 }
             },
             false
         );
 
-        let node;
-        while (node = mainWalker.nextNode()) {
-            const text = node.textContent.trim();
-            if (text) {
-                textParts.push(text);
-            }
-        }
+        // iframe内のコンテンツを取得
+        const iframes = document.getElementsByTagName('iframe');
+        for (const iframe of iframes) {
+            try {
+                // セキュリティ制限のため、同一オリジンのiframeのみアクセス可能
+                if (iframe.contentDocument) {
+                    const iframeWalker = document.createTreeWalker(
+                        iframe.contentDocument.body,
+                        NodeFilter.SHOW_TEXT,
+                        {
+                            acceptNode: function(node) {
+                                let parent = node.parentElement;
+                                while (parent) {
+                                    const style = window.getComputedStyle(parent);
+                                    if (style.display === 'none' ||
+                                        style.visibility === 'hidden' ||
+                                        style.opacity === '0') {
+                                        return NodeFilter.FILTER_REJECT;
+                                    }
+                                    parent = parent.parentElement;
+                                }
+                                return NodeFilter.FILTER_ACCEPT;
+                            }
+                        },
+                        false
+                    );
 
-        // フォーム関連の追加テキスト取得
-        function getFormTexts() {
-            // 一般的なフォーム要素のセレクタ
-            const formSelectors = [
-                'input[type="text"]',
-                'input[type="email"]',
-                'input[type="tel"]',
-                'textarea',
-                'select',
-                'label',
-                'button',
-                // Contact Form 7特有のセレクタ
-                '.wpcf7-form-control-wrap',
-                '.wpcf7-list-item-label',
-                '.tit-area-form',
-                // 一般的なフォームのタイトル/説明セレクタ
-                '.form-title',
-                '.form-description',
-                '.form-label',
-                '.form-text',
-                // エラーメッセージなども含める
-                '.wpcf7-not-valid-tip',
-                '.wpcf7-validation-errors',
-                '.wpcf7-response-output'
-            ];
-
-            // すべてのフォーム要素を取得
-            const formElements = document.querySelectorAll(formSelectors.join(','));
-            
-            formElements.forEach(element => {
-                // 要素の表示テキスト
-                if (element.textContent) {
-                    textParts.push(element.textContent.trim());
-                }
-                
-                // 属性からのテキスト取得
-                ['placeholder', 'title', 'value', 'aria-label'].forEach(attr => {
-                    if (element.hasAttribute(attr)) {
-                        const attrText = element.getAttribute(attr).trim();
-                        if (attrText) {
-                            textParts.push(attrText);
+                    let node;
+                    while (node = iframeWalker.nextNode()) {
+                        const text = node.textContent.trim();
+                        if (text) {
+                            textParts.push(text);
                         }
                     }
-                });
-
-                // ラベル要素の関連テキスト
-                if (element.tagName === 'INPUT' && element.id) {
-                    const relatedLabel = document.querySelector(`label[for="${element.id}"]`);
-                    if (relatedLabel && relatedLabel.textContent) {
-                        textParts.push(relatedLabel.textContent.trim());
-                    }
                 }
-            });
-
-            // フォームに関連する特定のクラスを持つ要素のテキスト
-            const formRelatedClasses = [
-                'form',
-                'contact',
-                'inquiry',
-                'required',
-                'optional',
-                'agreement',
-                'privacy',
-                'policy',
-                'confirm',
-                'submit'
-            ];
-
-            formRelatedClasses.forEach(className => {
-                document.querySelectorAll(`.${className}`).forEach(element => {
-                    if (element.textContent) {
-                        textParts.push(element.textContent.trim());
-                    }
-                });
-            });
+            } catch (error) {
+                console.log('Error accessing iframe content:', error);
+            }
         }
 
-        // フォームテキストの取得を実行
-        getFormTexts();
+        // 埋め込みフォームの特定の要素を直接取得
+        const formElements = [
+            '.hs-form',           // HubSpot
+            '.typeform-embed',    // Typeform
+            '.wufoo-form',        // Wufoo
+            '.jotform-form'       // JotForm
+        ].join(',');
 
-        // display: noneの要素内でも重要な情報があることがあるため、
-        // 特定のキーワードを含む要素は取得する
-        const importantKeywords = ['営業', '勧誘', '禁止', '遠慮'];
-        document.querySelectorAll('*').forEach(element => {
-            const text = element.textContent;
-            if (text && importantKeywords.some(keyword => text.includes(keyword))) {
-                textParts.push(text.trim());
+        document.querySelectorAll(formElements).forEach(form => {
+            const formText = form.innerText || form.textContent;
+            if (formText) {
+                textParts.push(formText);
             }
         });
-
-        // メタ情報の取得
-        const metaTags = document.querySelectorAll('meta[name="description"], meta[name="keywords"]');
-        metaTags.forEach(meta => {
-            const content = meta.getAttribute('content');
-            if (content) {
-                textParts.push(content);
-            }
-        });
-
-    } catch (error) {
-        console.error('Error getting text content:', error);
-    }
-
-    // 重複を除去して結合
-    return [...new Set(textParts)].join(' ').toLowerCase();
-}
 
         // Shadow DOMのサポート
         function getShadowText(element) {

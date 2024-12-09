@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Path and Form Aware Page Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.3
+// @version      0.1.4
 // @description  blocker tool
 // @author       You
 // @match        *://*/*
@@ -459,6 +459,12 @@
         // crowdworks.jpドメインの場合は早期リターン
         if (window.location.hostname.toLowerCase() === 'crowdworks.jp' || 
             window.location.hostname.toLowerCase().endsWith('.crowdworks.jp')) {
+            return;
+        }
+
+        // Googleドメインの場合は早期リターン
+        if (window.location.hostname.toLowerCase() === 'google.com' || 
+            window.location.hostname.toLowerCase().endsWith('.google.com')) {
             return;
         }
 

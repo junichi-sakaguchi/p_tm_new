@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Path and Form Aware Page Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.2
+// @version      0.1.3
 // @description  blocker tool
 // @author       You
 // @match        *://*/*
@@ -16,28 +16,35 @@
     // ブロックするドメインのリスト
     const blockedDomains = [
         'tsukulink.net',
-        'carcon.co.jp',
-        'plex.co.jp'
+        'carcon.co.jp'
         // 必要に応じてドメインを追加
     ];
 
     const wordGroup1 = [
         '勧誘',
         { word: '営業', exclude: ['営業時間'] },
+        { word: '営業', exclude: ['営業中'] },
         { word: '営業', exclude: ['営業内容'] },
         { word: '営業', exclude: ['営業部'] },
         { word: '営業', exclude: ['営業日'] },
         { word: '取引', exclude: ['取引銀行'] },
         { word: '取引', exclude: ['特定商取引'] },
+        { word: '取引', exclude: ['取引会社'] },
+        { word: '取引', exclude: ['取引の流れ'] },
+        { word: '取引', exclude: ['取引実績'] },
         '売り込',
         '売込',
         'セールス',
         '営利目的',
         '商用利用',
         { word: '業者', exclude: ['販売業者'] },
+        { word: '業者', exclude: ['業者様'] },
         { word: '業者', exclude: ['事業者'] },
-        '業務',
-        { word: '広告', exclude: ['広告媒体'] }
+        { word: '業務', exclude: ['業務用'] },
+        { word: '業務', exclude: ['業務系'] },
+        { word: '業務', exclude: ['業務委託'] },
+        { word: '広告', exclude: ['広告媒体'] },
+        { word: '広告', exclude: ['広告企画'] }
     ];
 
     const wordGroup2 = [
@@ -51,12 +58,18 @@
         'ではない',
         'いたしません',
         'ございません',
+        'しないでください',
+        'しないで下さい',
+        '返事ができない',
+        '返信できない',
         'しかるべき対応',
         '訴訟',
+        '対応手数料',
         { word: '請求', exclude: ['資料請求'] },
         { word: '請求', exclude: ['保険請求'] },
         { word: '請求', exclude: ['請求日'] },
-        { word: '請求', exclude: ['請求書ダウンロード'] }
+        { word: '請求', exclude: ['請求書ダウンロード'] },
+        { word: '請求', exclude: ['ご請求'] }
     ];
 
     const searchFormIdentifiers = [
@@ -230,9 +243,16 @@
                             }
 
                             if (parent.className &&
-                                typeof parent.className === 'string' &&
-                                parent.className.toLowerCase().includes('agree')) {
-                                return NodeFilter.FILTER_REJECT;
+                            typeof parent.className === 'string' &&
+                            (parent.className.toLowerCase().includes('agree') ||
+                             parent.className.toLowerCase().includes('privacy'))) {
+                            return NodeFilter.FILTER_REJECT;
+                            }
+
+                            if (parent.id &&
+                            typeof parent.id === 'string' &&
+                            parent.id.toLowerCase().includes('privacy')) {
+                            return NodeFilter.FILTER_REJECT;
                             }
 
                             const style = window.getComputedStyle(parent);
@@ -417,14 +437,14 @@
         if (!isGoogleForm()) return;
 
         setTimeout(() => {
-            checkAndBlockPage();
+            BlockPage();
 
             const checkInterval = setInterval(() => {
                 if (isBlocked) {
                     clearInterval(checkInterval);
                     return;
                 }
-                checkAndBlockPage();
+                BlockPage();
             }, 1000);
 
             setTimeout(() => {
@@ -435,6 +455,12 @@
 
     const checkAndBlockPage = debounce(() => {
         if (isBlocked || !isInitialized) return;
+
+        // crowdworks.jpドメインの場合は早期リターン
+        if (window.location.hostname.toLowerCase() === 'crowdworks.jp' || 
+            window.location.hostname.toLowerCase().endsWith('.crowdworks.jp')) {
+            return;
+        }
 
         // ドメインブロックのチェック
         if (isDomainBlocked()) {

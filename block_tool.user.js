@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name         Path and Form Aware Page Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.0
+// @version      0.1.1
 // @description  blocker tool
 // @author       You
 // @match        *://*/*
 // @grant        none
-// @description  指定ドメインブロック、営業禁止ブロック
 // @updateURL    https://github.com/junichi-sakaguchi/p_tm_new/raw/main/block_tool.user.js
 // @downloadURL  https://github.com/junichi-sakaguchi/p_tm_new/raw/main/block_tool.user.js
 // ==/UserScript==
@@ -16,7 +15,8 @@
 
     // ブロックするドメインのリスト
     const blockedDomains = [
-        'tsukulink.net'
+        'tsukulink.net',
+        'carcon.co.jp'
         // 必要に応じてドメインを追加
     ];
 

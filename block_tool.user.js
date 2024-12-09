@@ -7,8 +7,8 @@
 // @match        *://*/*
 // @grant        none
 // @description  指定ドメインブロック、営業禁止ブロック
-// @updateURL    https://github.com/junichi-sakaguchi/p_tm_new/raw/refs/heads/main/block_tool.user.js
-// @downloadURL  https://github.com/junichi-sakaguchi/p_tm_new/raw/refs/heads/main/block_tool.user.js
+// @updateURL    https://github.com/junichi-sakaguchi/p_tm_new/raw/main/block_tool.user.js
+// @downloadURL  https://github.com/junichi-sakaguchi/p_tm_new/raw/main/block_tool.user.js
 // ==/UserScript==
 
 (function() {
@@ -16,8 +16,7 @@
 
     // ブロックするドメインのリスト
     const blockedDomains = [
-        'tsukulink.net',
-        'carcon.co.jp'
+        'tsukulink.net'
         // 必要に応じてドメインを追加
     ];
 

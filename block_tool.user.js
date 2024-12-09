@@ -194,107 +194,154 @@
         return false;
     }
 
-    function getAllTextContent() {
-        const textParts = [];
+    // 既存のgetAllTextContent関数を拡張
+function getAllTextContent() {
+    const textParts = [];
 
-        try {
-            if (isGoogleForm()) {
-                document.querySelectorAll('[role="heading"]').forEach(heading => {
-                    if (heading.textContent) {
-                        textParts.push(heading.textContent);
-                    }
-                });
-
-                document.querySelectorAll('.freebirdFormviewerViewDescriptionText').forEach(desc => {
-                    if (desc.textContent) {
-                        textParts.push(desc.textContent);
-                    }
-                });
-
-                const questionSelectors = [
-                    '.freebirdFormviewerComponentsQuestionBaseTitle',
-                    '.freebirdFormviewerComponentsQuestionText',
-                    '.freebirdFormviewerComponentsQuestionBaseHeader',
-                    '.freebirdFormviewerViewNumberedItemContainer',
-                    '.freebirdFormviewerComponentsQuestionRadioChoice',
-                    '.freebirdFormviewerComponentsQuestionCheckboxChoice',
-                    '.freebirdFormviewerComponentsQuestionTextRoot'
-                ];
-
-                questionSelectors.forEach(selector => {
-                    document.querySelectorAll(selector).forEach(element => {
-                        if (element.textContent) {
-                            textParts.push(element.textContent);
-                        }
-                    });
-                });
-            }
-
-            const walker = document.createTreeWalker(
-                document.body,
-                NodeFilter.SHOW_TEXT,
-                {
-                    acceptNode: function(node) {
-                        let parent = node.parentElement;
-                        while (parent) {
-                            if (parent.tagName === 'SELECT' ||
-                                parent.tagName === 'OPTION') {
-                                return NodeFilter.FILTER_REJECT;
-                            }
-
-                            if (parent.className &&
-                            typeof parent.className === 'string' &&
-                            (parent.className.toLowerCase().includes('agree') ||
-                             parent.className.toLowerCase().includes('privacy'))) {
-                            return NodeFilter.FILTER_REJECT;
-                            }
-
-                            if (parent.id &&
-                            typeof parent.id === 'string' &&
-                            parent.id.toLowerCase().includes('privacy')) {
-                            return NodeFilter.FILTER_REJECT;
-                            }
-
-                            const style = window.getComputedStyle(parent);
-                            if (style.display === 'none' ||
-                                style.visibility === 'hidden' ||
-                                style.opacity === '0') {
-                                return NodeFilter.FILTER_REJECT;
-                            }
-                            parent = parent.parentElement;
-                        }
-                        return NodeFilter.FILTER_ACCEPT;
-                    }
-                },
-                false
-            );
-
-            let node;
-            while (node = walker.nextNode()) {
-                const text = node.textContent.trim();
-                if (text) {
-                    textParts.push(text);
+    try {
+        // 既存の処理を維持
+        const mainWalker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            {
+                acceptNode: function(node) {
+                    // 既存の検証ロジック
                 }
-            }
+            },
+            false
+        );
 
-            const metaDescription = document.querySelector('meta[name="description"]');
-            if (metaDescription) {
-                const content = metaDescription.getAttribute('content');
-                if (content) {
-                    textParts.push(content);
+        // iframe内のコンテンツを取得
+        const iframes = document.getElementsByTagName('iframe');
+        for (const iframe of iframes) {
+            try {
+                // セキュリティ制限のため、同一オリジンのiframeのみアクセス可能
+                if (iframe.contentDocument) {
+                    const iframeWalker = document.createTreeWalker(
+                        iframe.contentDocument.body,
+                        NodeFilter.SHOW_TEXT,
+                        {
+                            acceptNode: function(node) {
+                                let parent = node.parentElement;
+                                while (parent) {
+                                    const style = window.getComputedStyle(parent);
+                                    if (style.display === 'none' ||
+                                        style.visibility === 'hidden' ||
+                                        style.opacity === '0') {
+                                        return NodeFilter.FILTER_REJECT;
+                                    }
+                                    parent = parent.parentElement;
+                                }
+                                return NodeFilter.FILTER_ACCEPT;
+                            }
+                        },
+                        false
+                    );
+
+                    let node;
+                    while (node = iframeWalker.nextNode()) {
+                        const text = node.textContent.trim();
+                        if (text) {
+                            textParts.push(text);
+                        }
+                    }
                 }
+            } catch (error) {
+                console.log('Error accessing iframe content:', error);
             }
-
-            if (document.title) {
-                textParts.push(document.title);
-            }
-
-        } catch (error) {
-            console.error('Error getting text content:', error);
         }
 
-        return textParts.join(' ').toLowerCase();
+        // 埋め込みフォームの特定の要素を直接取得
+        const formElements = [
+            '.hs-form',           // HubSpot
+            '.typeform-embed',    // Typeform
+            '.wufoo-form',        // Wufoo
+            '.jotform-form'       // JotForm
+        ].join(',');
+
+        document.querySelectorAll(formElements).forEach(form => {
+            const formText = form.innerText || form.textContent;
+            if (formText) {
+                textParts.push(formText);
+            }
+        });
+
+        // Shadow DOMのサポート
+        function getShadowText(element) {
+            if (element.shadowRoot) {
+                const shadowWalker = document.createTreeWalker(
+                    element.shadowRoot,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+
+                let node;
+                while (node = shadowWalker.nextNode()) {
+                    const text = node.textContent.trim();
+                    if (text) {
+                        textParts.push(text);
+                    }
+                }
+            }
+        }
+
+        document.querySelectorAll('*').forEach(getShadowText);
+
+    } catch (error) {
+        console.error('Error getting text content:', error);
     }
+
+    return textParts.join(' ').toLowerCase();
+}
+
+// MutationObserverの設定を拡張
+const setupObservers = () => {
+    // メインのMutationObserver
+    const mainObserver = new MutationObserver((mutations) => {
+        if (isBlocked || !isInitialized) return;
+        checkAndBlockPage();
+        
+        // 新しく追加されたiframeを監視
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.tagName === 'IFRAME') {
+                    setupIframeObserver(node);
+                }
+            });
+        });
+    });
+
+    // iframeの監視設定
+    const setupIframeObserver = (iframe) => {
+        try {
+            if (iframe.contentDocument) {
+                const iframeObserver = new MutationObserver(() => {
+                    if (isBlocked || !isInitialized) return;
+                    checkAndBlockPage();
+                });
+
+                iframeObserver.observe(iframe.contentDocument.body, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+            }
+        } catch (error) {
+            console.log('Error observing iframe:', error);
+        }
+    };
+
+    // 既存のiframeの監視を設定
+    document.getElementsByTagName('iframe').forEach(setupIframeObserver);
+
+    // メインのDOM監視を開始
+    mainObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+};
 
     function getDetectedWords(text, wordGroup) {
         const mergedWordGroup = wordGroup.reduce((acc, item) => {

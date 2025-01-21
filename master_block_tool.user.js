@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.2
+// @version      0.1.3
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
@@ -25,6 +25,9 @@
         '勧誘',
         { word: '営業', exclude: ['営業時間'] },
         { word: '営業', exclude: ['営業中'] },
+        { word: '営業', exclude: ['営業開発'] },
+        { word: '営業', exclude: ['営業所'] },
+        { word: '営業', exclude: ['年末年始営業'] },
         { word: '営業', exclude: ['営業内容'] },
         { word: '営業', exclude: ['営業部'] },
         { word: '営業', exclude: ['営業日'] },

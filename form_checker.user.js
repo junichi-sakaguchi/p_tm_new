@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Form Checker
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.0.1
 // @description  フォームチェッカー
 // @match        *://*/*
 // @grant        none
@@ -47,7 +47,7 @@
         name: 'subject',
         variable: '{subject}',
         condition: (fieldName, value) => {
-          return value.includes("事業承継") && value.length <= 50;
+          return (value.includes("事業承継") || value.includes("資本提携")) && value.length <= 50;
         }
       },
       // 【順番2】会社名

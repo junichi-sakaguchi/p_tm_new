@@ -116,9 +116,9 @@
             // 完全一致
             if (currentUrl === lowerUrl) return true;
             // パスのみの指定の場合
-            if (lowerUrl.startsWith('/') && currentPath === lowerUrl) return true;
+            // if (lowerUrl.startsWith('/') && currentPath === lowerUrl) return true;
             // 前方一致（ワイルドカード的な使い方）
-            if (currentUrl.startsWith(lowerUrl) && !lowerUrl.startsWith('/')) return true;
+            // if (currentUrl.startsWith(lowerUrl) && !lowerUrl.startsWith('/')) return true;
             return false;
         });
     }

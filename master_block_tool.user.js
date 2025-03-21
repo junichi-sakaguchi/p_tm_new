@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.8
+// @version      0.1.9
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
@@ -104,7 +104,11 @@
         'しかるべき対応',
         '訴訟',
         '対応手数料',
-        { word: '請求', exclude: ['資料請求', '保険請求', '請求日', '請求書ダウンロード', 'ご請求'] }
+        { word: '請求', exclude: ['資料請求']},
+        { word: '請求', exclude: ['保険請求']},
+        { word: '請求', exclude: ['請求日']},
+        { word: '請求', exclude: ['請求書ダウンロード']},
+        { word: '請求', exclude: ['ご請求']}
     ];
 
     const searchFormIdentifiers = [

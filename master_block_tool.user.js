@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.1.9
+// @version      0.1.10
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
@@ -43,6 +43,8 @@
         { word: '営業', exclude: ['営業品目'] },
         { word: '営業', exclude: ['翌営業'] },
         { word: '営業', exclude: ['営業領域'] },
+        { word: '営業', exclude: ['営業倉庫'] },
+        { word: '営業', exclude: ['その他営業'] },
         { word: '取引', exclude: ['取引銀行'] },
         { word: '取引', exclude: ['特定商取引'] },
         { word: '取引', exclude: ['取引会社'] },
@@ -51,6 +53,8 @@
         { word: '取引', exclude: ['個人様とのお取引は行っておりません'] },
         { word: '取引', exclude: ['お取引を希望'] },
         { word: '取引', exclude: ['主要取引先'] },
+        { word: '取引', exclude: ['取引履歴'] },
+        { word: '取引', exclude: ['直接取引'] },
         { word: '勧誘', exclude: ['勧誘方針'] },
         '売り込',
         '売込',
@@ -63,6 +67,7 @@
         { word: '業者', exclude: ['協力業者'] },
         { word: '業者', exclude: ['委託する業者'] },
         { word: '業者', exclude: ['配送業者'] },
+        { word: '業者', exclude: ['従業者'] },
         { word: '業務', exclude: ['業務用'] },
         { word: '業務', exclude: ['業務系'] },
         { word: '業務', exclude: ['業務委託'] },
@@ -77,12 +82,23 @@
         { word: '業務', exclude: ['業務実績'] },
         { word: '業務', exclude: ['業務フロー'] },
         { word: '業務', exclude: ['業務分類'] },
+        { word: '業務', exclude: ['業務の一部'] },
+        { word: '業務', exclude: ['コンサルティング業務'] },
+        { word: '業務', exclude: ['コンサル業務'] },
+        { word: '業務', exclude: ['業務請負'] },
+        { word: '業務', exclude: ['業務会員'] },
+        { word: '業務', exclude: ['作成業務'] },
+        { word: '業務', exclude: ['管理業務'] },
+        { word: '業務', exclude: ['代⾏業務'] },
+        { word: '業務', exclude: ['業務効率'] },
         { word: '広告', exclude: ['広告媒体'] },
         { word: '広告', exclude: ['広告企画'] },
         { word: '広告', exclude: ['ネット広告'] },
         { word: '広告', exclude: ['その他広告'] },
         { word: '広告', exclude: ['ラジオ広告'] },
-        { word: '広告', exclude: ['雑誌広告'] }
+        { word: '広告', exclude: ['雑誌広告'] },
+        { word: '広告', exclude: ['広告費換算'] },
+        { word: '広告', exclude: ['広告換算'] }
     ];
 
     const wordGroup2 = [
@@ -111,6 +127,12 @@
         { word: '請求', exclude: ['ご請求']}
     ];
 
+    // 保護されたキーワードリスト
+    const protectedKeywords = [
+        '個人情報',
+        'プライバシーポリシー'
+    ];
+
     const searchFormIdentifiers = [
         'search',
         'query',
@@ -124,6 +146,65 @@
     let isBlocked = false;
     let isInitialized = false;
     let debounceTimer = null;
+    
+    // デバッグモードを有効化
+    const DEBUG = true;
+    
+    // デバッグ情報を出力する関数
+    function debugLog(...args) {
+        if (DEBUG) {
+            console.log('[Domain Blocker Debug]', ...args);
+        }
+    }
+
+    /**
+     * 最下層div（子divを持たないdiv）に保護対象キーワードが含まれているかチェック
+     * @returns {boolean} 保護対象キーワードが含まれている場合はtrue
+     */
+    function checkLeafDivForProtectedKeywords() {
+        try {
+            const allDivs = document.querySelectorAll('div');
+            let leafDivCount = 0;
+            let leafDivsWithContent = 0;
+            let protectedKeywordFound = false;
+            
+            debugLog('開始: 最下層divチェック');
+            
+            for (const div of allDivs) {
+                // 子divを持たない最下層divのみを対象とする
+                if (!div.querySelector('div')) {
+                    leafDivCount++;
+                    const text = div.textContent || '';
+                    if (text.trim().length > 0) {
+                        leafDivsWithContent++;
+                        
+                        // テキストの最初の100文字を出力（長すぎる場合は省略）
+                        const truncatedText = text.length > 100 ? text.substring(0, 97) + '...' : text;
+                        debugLog(`最下層div #${leafDivCount} 内容: "${truncatedText}"`);
+                        
+                        const lowerText = text.toLowerCase();
+                        
+                        // いずれかの保護キーワードが含まれている場合はtrueを返す
+                        for (const keyword of protectedKeywords) {
+                            if (lowerText.includes(keyword.toLowerCase())) {
+                                debugLog(`保護キーワード「${keyword}」が最下層div #${leafDivCount} で見つかりました`);
+                                protectedKeywordFound = true;
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            debugLog(`合計: ${leafDivCount}個の最下層div、うちテキストを含むもの: ${leafDivsWithContent}個`);
+            debugLog(`保護キーワード検出: ${protectedKeywordFound ? 'あり' : 'なし'}`);
+            
+        } catch (error) {
+            console.error('Error in checkLeafDivForProtectedKeywords:', error);
+        }
+        
+        return false;
+    }
 
     // ドメインがブロックリストに含まれているかチェック
     function isDomainBlocked() {
@@ -212,6 +293,18 @@
                window.location.pathname.includes('/forms/');
     }
 
+    // ヘルパー関数: 指定ノードが最下層div内にあるか判定する
+    function isInsideLeafDiv(node) {
+        let element = node.parentElement;
+        while (element) {
+            if (element.tagName === 'DIV' && !element.querySelector('div')) {
+                return true;
+            }
+            element = element.parentElement;
+        }
+        return false;
+    }
+
     function debounce(func, wait) {
         return function executedFunction(...args) {
             if (debounceTimer) {
@@ -263,20 +356,31 @@
         return false;
     }
 
-    function getAllTextContent() {
-        const textParts = [];
+    /**
+     * ページ内のテキストを2つのグループに分ける
+     * ・leafTexts: 最下層div内のテキスト（除外対象）
+     * ・nonLeafTexts: それ以外のテキスト（検査対象）
+     * @returns {string} 検査対象テキストを集約した文字列
+     */
+    function getFilteredTextContent() {
+        const nonLeafTexts = [];
+        const leafTexts = [];
+        debugLog('[TextFilter] テキスト抽出開始');
 
         try {
+            // Googleフォームの場合は特別処理
             if (isGoogleForm()) {
                 document.querySelectorAll('[role="heading"]').forEach(heading => {
                     if (heading.textContent) {
-                        textParts.push(heading.textContent);
+                        nonLeafTexts.push(heading.textContent);
+                        debugLog('[TextFilter] Googleフォーム見出し追加:', heading.textContent.substring(0, 50) + (heading.textContent.length > 50 ? '...' : ''));
                     }
                 });
 
                 document.querySelectorAll('.freebirdFormviewerViewDescriptionText').forEach(desc => {
                     if (desc.textContent) {
-                        textParts.push(desc.textContent);
+                        nonLeafTexts.push(desc.textContent);
+                        debugLog('[TextFilter] Googleフォーム説明追加:', desc.textContent.substring(0, 50) + (desc.textContent.length > 50 ? '...' : ''));
                     }
                 });
 
@@ -293,41 +397,36 @@
                 questionSelectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(element => {
                         if (element.textContent) {
-                            textParts.push(element.textContent);
+                            nonLeafTexts.push(element.textContent);
+                            debugLog('[TextFilter] Googleフォーム質問追加:', element.textContent.substring(0, 50) + (element.textContent.length > 50 ? '...' : ''));
                         }
                     });
                 });
             }
 
+            // TreeWalkerで全テキストノードを確認
             const walker = document.createTreeWalker(
                 document.body,
                 NodeFilter.SHOW_TEXT,
                 {
                     acceptNode: function(node) {
+                        // すでに非表示要素等のチェックも行う
                         let parent = node.parentElement;
                         while (parent) {
-                            if (parent.tagName === 'SELECT' ||
-                                parent.tagName === 'OPTION') {
+                            if (parent.tagName === 'SELECT' || parent.tagName === 'OPTION') {
                                 return NodeFilter.FILTER_REJECT;
                             }
-
-                            if (parent.className &&
-                            typeof parent.className === 'string' &&
-                            (parent.className.toLowerCase().includes('agree') ||
-                             parent.className.toLowerCase().includes('privacy'))) {
-                            return NodeFilter.FILTER_REJECT;
+                            if (parent.className && typeof parent.className === 'string' &&
+                                (parent.className.toLowerCase().includes('agree') ||
+                                 parent.className.toLowerCase().includes('privacy'))) {
+                                return NodeFilter.FILTER_REJECT;
                             }
-
-                            if (parent.id &&
-                            typeof parent.id === 'string' &&
-                            parent.id.toLowerCase().includes('privacy')) {
-                            return NodeFilter.FILTER_REJECT;
+                            if (parent.id && typeof parent.id === 'string' &&
+                                parent.id.toLowerCase().includes('privacy')) {
+                                return NodeFilter.FILTER_REJECT;
                             }
-
                             const style = window.getComputedStyle(parent);
-                            if (style.display === 'none' ||
-                                style.visibility === 'hidden' ||
-                                style.opacity === '0') {
+                            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
                                 return NodeFilter.FILTER_REJECT;
                             }
                             parent = parent.parentElement;
@@ -338,31 +437,56 @@
                 false
             );
 
+            // 各ノードを分類
             let node;
             while (node = walker.nextNode()) {
                 const text = node.textContent.trim();
-                if (text) {
-                    textParts.push(text);
+                if (!text) continue;
+                if (isInsideLeafDiv(node)) {
+                    // leaf divなら、protectedKeywords（プライバシーポリシー、個人情報）を含むかチェック
+                    let exclude = false;
+                    for (const keyword of protectedKeywords) {
+                        if (text.toLowerCase().includes(keyword.toLowerCase())) {
+                            exclude = true;
+                            break;
+                        }
+                    }
+                    if (exclude) {
+                        debugLog('[TextFilter] leaf divのテキストの内、protectedキーワードを含むため除外:', text.substring(0, 50) + (text.length > 50 ? '...' : ''));
+                    } else {
+                        nonLeafTexts.push(text);
+                        debugLog('[TextFilter] leaf divのテキスト（除外対象外）:', text.substring(0, 50) + (text.length > 50 ? '...' : ''));
+                    }
+                } else {
+                    nonLeafTexts.push(text);
+                    debugLog('[TextFilter] 検査対象テキスト:', text.substring(0, 50) + (text.length > 50 ? '...' : ''));
                 }
             }
 
+            debugLog('[TextFilter] leafTextsの件数:', leafTexts.length);
+            debugLog('[TextFilter] 検査対象のnonLeafTextsの件数:', nonLeafTexts.length);
+
+            // meta descriptionとtitleも追加
             const metaDescription = document.querySelector('meta[name="description"]');
             if (metaDescription) {
                 const content = metaDescription.getAttribute('content');
                 if (content) {
-                    textParts.push(content);
+                    nonLeafTexts.push(content);
+                    debugLog('[TextFilter] metaDescription追加:', content.substring(0, 50) + (content.length > 50 ? '...' : ''));
                 }
             }
-
             if (document.title) {
-                textParts.push(document.title);
+                nonLeafTexts.push(document.title);
+                debugLog('[TextFilter] title追加:', document.title);
             }
 
         } catch (error) {
-            console.error('Error getting text content:', error);
+            console.error('Error in getFilteredTextContent:', error);
         }
 
-        return textParts.join(' ').toLowerCase();
+        const aggregatedText = nonLeafTexts.join(' ').toLowerCase();
+        debugLog('[TextFilter] 集約テキスト（先頭2000文字）:', aggregatedText.substring(0, 2000) + (aggregatedText.length > 2000 ? '...' : ''));
+        return aggregatedText;
     }
 
     function getDetectedWords(text, wordGroup) {
@@ -525,49 +649,67 @@
     const checkAndBlockPage = debounce(() => {
         if (isBlocked || !isInitialized) return;
 
+        debugLog('現在のURL:', window.location.href);
+
         // crowdworks.jpドメインの場合は早期リターン
         if (window.location.hostname.toLowerCase() === 'crowdworks.jp' ||
             window.location.hostname.toLowerCase().endsWith('.crowdworks.jp')) {
+            debugLog('crowdworks.jpドメインのためスキップします');
             return;
         }
 
         // Googleドメインの場合は早期リターン
         if (window.location.hostname.toLowerCase() === 'google.com' ||
             window.location.hostname.toLowerCase().endsWith('.google.com')) {
+            debugLog('Googleドメインのためスキップします');
             return;
         }
 
         // ドメインブロックのチェック
         if (isDomainBlocked()) {
+            debugLog('ブロック対象ドメインです');
             showDomainBlockMessage();
             return;
         }
 
         // URLブロックのチェック
         if (isUrlBlocked()) {
+            debugLog('ブロック対象URLです');
             showUrlBlockMessage();
             return;
         }
 
         if (isTopPage()) {
+            debugLog('トップページです');
             if (!hasNonSearchForm()) {
+                debugLog('検索フォームのみのページのためスキップします');
                 return;
             }
         }
 
-        const visibleText = getAllTextContent();
-        console.log("Detected text:", visibleText);
+        // ※保護対象キーワードは getFilteredTextContent() 内で除外されるため、
+        // 以下の早期リターン処理は削除しています
+        debugLog('最下層divの保護対象キーワードチェック（結果は集約テキスト作成に影響しません）');
+        checkLeafDivForProtectedKeywords();  
+        // チェックは行うがリターンしない
 
+        debugLog('単語検出を開始します');
+        debugLog('[Detection] wordGroupチェック開始');
+        
+        // 新しいgetFilteredTextContent関数を使用してテキストを取得
+        const visibleText = getFilteredTextContent();
+        
         const detectedWords1 = getDetectedWords(visibleText, wordGroup1);
         const detectedWords2 = getDetectedWords(visibleText, wordGroup2);
 
-        console.log("Group 1 matches:", detectedWords1);
-        console.log("Group 2 matches:", detectedWords2);
+        debugLog('[Detection] 語群1の一致:', detectedWords1);
+        debugLog('[Detection] 語群2の一致:', detectedWords2);
 
         if (detectedWords1.length > 0 && detectedWords2.length > 0) {
-            console.log('Detected words from group 1:', detectedWords1);
-            console.log('Detected words from group 2:', detectedWords2);
+            debugLog('[Detection] 両グループの語が検出されたのでブロック処理へ');
             blockPage(detectedWords1, detectedWords2);
+        } else {
+            debugLog('[Detection] ブロック条件を満たしていません');
         }
     }, 500);
 
@@ -583,30 +725,64 @@
         }
 
         if (shouldCheck) {
+            debugLog('DOM変更を検出しました。再チェックを行います。');
             checkAndBlockPage();
         }
     });
 
     window.addEventListener('load', () => {
         isInitialized = true;
+        debugLog('ページ読み込み完了。スクリプト初期化');
 
         // 最初にドメインブロックをチェック
         if (isDomainBlocked()) {
+            debugLog('ブロック対象ドメインです');
             showDomainBlockMessage();
             return;
         }
 
         if (isGoogleForm()) {
+            debugLog('Googleフォームを検出しました');
             setupGoogleFormCheck();
         } else {
+            debugLog('通常のページ処理を開始します');
             setTimeout(() => {
+                debugLog('ページチェック開始');
+                
+                // 開発モードではテストを実行（確認用）
+                if (DEBUG) {
+                    runDebugTest();
+                }
+                
                 checkAndBlockPage();
                 observer.observe(document.body, {
                     childList: true,
                     subtree: true,
                     characterData: true
                 });
+                debugLog('MutationObserverを設定しました');
             }, 1000);
         }
     });
-})();
+    
+    /**
+     * 開発用のテスト関数
+     * 主な機能の動作確認を行います
+     */
+    function runDebugTest() {
+        debugLog('==========================================');
+        debugLog('デバッグテスト実行中...');
+        
+        // 保護キーワードのチェック機能テスト
+        debugLog('保護キーワードチェック機能テスト:');
+        const protectedResult = checkLeafDivForProtectedKeywords();
+        debugLog(`保護キーワード検出結果: ${protectedResult ? '検出あり（集約テキストから除外）' : '検出なし'}`);
+        
+        // 分類テスト（leaf divとnon-leaf divの検出）
+        debugLog('テキスト分類テスト:');
+        getFilteredTextContent();
+        
+        debugLog('デバッグテスト完了');
+        debugLog('==========================================');
+    }
+})(); 

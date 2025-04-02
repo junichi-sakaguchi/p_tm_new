@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.2.4
+// @version      0.2.5
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
@@ -27,7 +27,8 @@
     const allowedDomains = [
         'google.com',
         'yahoo.co.jp',
-        'crowdworks.jp'
+        'crowdworks.jp',
+        'chatwork.com'
     ];
 
     // 許可ドメインの場合、ブロック処理をスキップするフラグを設定

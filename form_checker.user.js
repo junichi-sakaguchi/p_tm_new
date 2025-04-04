@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Form Checker
 // @namespace    http://tampermonkey.net/
-// @version      1.0.1
+// @version      1.0.2
 // @description  フォームチェッカー
 // @match        *://*/*
 // @grant        none
@@ -47,7 +47,7 @@
         name: 'subject',
         variable: '{subject}',
         condition: (fieldName, value) => {
-          return (value.includes("事業承継") || value.includes("資本提携")) && value.length <= 50;
+          return (value.includes("事業承継") || value.includes("資本提携") || value.includes("譲渡案件")) && value.length <= 50;
         }
       },
       // 【順番2】会社名
@@ -139,7 +139,7 @@
         variable: '{phone_number}',
         condition: (fieldName, value) => {
           const trimmed = value.trim();
-          return ["03-6682-1382", "0366821382", "03ー6682ー1382"].includes(trimmed);
+          return ["03-6682-1382", "0366821382", "03ー6682ー1382","050-1782-0380","05017820380","050ー1782ー0380"].includes(trimmed);
         }
       },
       // 【順番2】FAX番号
@@ -149,7 +149,7 @@
         variable: '{fax_number}',
         condition: (fieldName, value) => {
           const trimmed = value.trim();
-          return ["03-6800-6539", "0368006539", "03ー6800ー6539","050-1782-0380","05017820380","050ー1782ー0380"].includes(trimmed);
+          return ["03-6800-6539", "0368006539", "03ー6800ー6539","03-4586-6309","0345866309","03ー4586ー6309"].includes(trimmed);
         }
       },
       // 【順番2】メールアドレス
@@ -336,7 +336,7 @@
           const trimmed = value.trim();
           const lowerName = fieldName.toLowerCase();
           if (lowerName.includes("fax") || lowerName.includes("ファックス")) {
-            return ["6800", "６８００"].includes(trimmed);
+            return ["6800", "６８００","4586","４５８６"].includes(trimmed);
           }
           return false;
         }
@@ -350,7 +350,7 @@
           const trimmed = value.trim();
           const lowerName = fieldName.toLowerCase();
           if (lowerName.includes("fax") || lowerName.includes("ファックス")) {
-            return ["6539", "６５３９"].includes(trimmed);
+            return ["6539", "６５３９","6309","６３０９"].includes(trimmed);
           }
           return false;
         }

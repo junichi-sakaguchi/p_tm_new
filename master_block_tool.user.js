@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.3.0
+// @version      0.3.1
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
@@ -220,6 +220,7 @@
         ['セールス', 'お断り'],
         ['営利目的', 'お断り'],
         ['売り込み', 'お断り'],
+        ['売り込み', 'ご遠慮'],
         ['営業', '受け付けておりません'],
         ['営業', '対応いたしかねます'],
         ['営業', '返信いたしかねます'],
@@ -647,7 +648,8 @@
             'em',
             'label',
             'td',
-            'th'
+            'th',
+            'dt'
         ];
         
         debugLogLevel('basic', '🔎 テキスト要素のスキャンを開始します...');
@@ -755,7 +757,7 @@
                         }
                         
                         // 要素内のテキスト要素もチェック
-                        const textElements = node.querySelectorAll('p, div, li, span, h1, h2, h3, h4, h5, h6, a, strong, em, label, td, th');
+                        const textElements = node.querySelectorAll('p, div, li, span, h1, h2, h3, h4, h5, h6, a, strong, em, label, td, th, dt');
                         textElements.forEach(element => {
                             if (element.textContent.trim().length > 3) {
                                 checkElement(element);

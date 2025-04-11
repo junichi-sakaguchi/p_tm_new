@@ -229,9 +229,7 @@
         ['営業', '返信いたしません'],
         ['営業', '返信しておりません'],
         ['営業', '利用しないでください'],
-        ['営業', '使用しないでください'],
-        ['営業', 'ご了承下さい'],
-        ['営業', 'ご了承ください'],
+        ['営業', '使用しないでください']
     ];
     
     // スタイル設定
@@ -455,34 +453,28 @@
                     if (typeof item === 'object' && item.word === matchedWord && item.exclude) {
                         for (const exclusion of item.exclude) {
                             if (text.includes(exclusion)) {
-                                // 除外対象を含むテキストから除外語を取り除いた場合にもワードが含まれるか確認
-                                const remainingText = text.replace(new RegExp(escapeRegExp(exclusion), 'g'), '');
-                                if (!containsWord(remainingText, matchedWord)) {
-                                    // 除外対象しか含まれていない場合
-                                    isExcluded = true;
-                                    excludeDetails.push(`"${matchedWord}" は除外条件 "${exclusion}" が適用されます`);
-                                    break;
-                                }
+                                isExcluded = true;
+                                excludeDetails.push(`"${matchedWord}" は除外条件 "${exclusion}" が適用されます`);
+                                break;
                             }
                         }
+                        if (isExcluded) break;
                     }
                 }
+                
+                if (isExcluded) break;
                 
                 // wordGroup2から除外条件を検索
                 for (const item of wordGroup2) {
                     if (typeof item === 'object' && item.word === matchedWord && item.exclude) {
                         for (const exclusion of item.exclude) {
                             if (text.includes(exclusion)) {
-                                // 除外対象を含むテキストから除外語を取り除いた場合にもワードが含まれるか確認
-                                const remainingText = text.replace(new RegExp(escapeRegExp(exclusion), 'g'), '');
-                                if (!containsWord(remainingText, matchedWord)) {
-                                    // 除外対象しか含まれていない場合
-                                    isExcluded = true;
-                                    excludeDetails.push(`"${matchedWord}" は除外条件 "${exclusion}" が適用されます`);
-                                    break;
-                                }
+                                isExcluded = true;
+                                excludeDetails.push(`"${matchedWord}" は除外条件 "${exclusion}" が適用されます`);
+                                break;
                             }
                         }
+                        if (isExcluded) break;
                     }
                 }
                 

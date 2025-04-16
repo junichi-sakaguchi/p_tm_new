@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Form Checker
 // @namespace    http://tampermonkey.net/
-// @version      1.0.2
+// @version      1.0.3
 // @description  フォームチェッカー
 // @match        *://*/*
 // @grant        none
@@ -306,11 +306,7 @@
         variable: '{phone_city_code}',
         condition: (fieldName, value) => {
           const trimmed = value.trim();
-          const lowerName = fieldName.toLowerCase();
-          if (lowerName.includes("tel") || lowerName.includes("電話") || lowerName.includes("phone")) {
-            return ["6682", "６６８２","1782","１７８２"].includes(trimmed);
-          }
-          return false;
+          return ["6682", "６６８２","1782","１７８２"].includes(trimmed);
         }
       },
       // 【順番4】加入者番号（電話）
@@ -320,11 +316,7 @@
         variable: '{phone_sub_code}',
         condition: (fieldName, value) => {
           const trimmed = value.trim();
-          const lowerName = fieldName.toLowerCase();
-          if (lowerName.includes("tel") || lowerName.includes("電話") || lowerName.includes("phone")) {
-            return ["1382", "１３８２","0380","０３８０"].includes(trimmed);
-          }
-          return false;
+          return ["1382", "１３８２","0380","０３８０"].includes(trimmed);
         }
       },
       // 【順番4】市内局番（FAX）
@@ -334,11 +326,7 @@
         variable: '{fax_city_code}',
         condition: (fieldName, value) => {
           const trimmed = value.trim();
-          const lowerName = fieldName.toLowerCase();
-          if (lowerName.includes("fax") || lowerName.includes("ファックス")) {
-            return ["6800", "６８００","4586","４５８６"].includes(trimmed);
-          }
-          return false;
+          return ["6800", "６８００","4586","４５８６"].includes(trimmed);
         }
       },
       // 【順番4】加入者番号（FAX）
@@ -348,11 +336,7 @@
         variable: '{fax_sub_code}',
         condition: (fieldName, value) => {
           const trimmed = value.trim();
-          const lowerName = fieldName.toLowerCase();
-          if (lowerName.includes("fax") || lowerName.includes("ファックス")) {
-            return ["6539", "６５３９","6309","６３０９"].includes(trimmed);
-          }
-          return false;
+          return ["6539", "６５３９","6309","６３０９"].includes(trimmed);
         }
       },
       // 【順番4】郵便番号_前半
@@ -403,22 +387,26 @@
           return ["35", "３５", "35歳", "３５歳", "三十五歳"].includes(trimmed);
         }
       },
-      // 【順番5】市外局番（電話・FAX）
+      // 【順番5】市外局番（電話）
       {
         order: 5,
         name: 'phone_area_code',
         variable: '{phone_area_code}',
         condition: (fieldName, value) => {
           const trimmed = value.trim();
-          const lowerName = fieldName.toLowerCase();
-          if (lowerName.includes("tel") || lowerName.includes("phone") || lowerName.includes("電話") ||
-              lowerName.includes("fax") || lowerName.includes("ファックス")) {
-            return ["03", "０３","050","０５０"].includes(trimmed);
-          }
-          return false;
+          return ["050", "０５０"].includes(trimmed);
+        }
+      },
+      // 【順番5】市外局番（FAX）
+      {
+        order: 5,
+        name: 'fax_area_code',
+        variable: '{fax_area_code}',
+        condition: (fieldName, value) => {
+          const trimmed = value.trim();
+          return ["03", "０３"].includes(trimmed);
         }
       }
-      // 【順番5】生月、生日は差し替え対象外
     ];
 
     // 各要素の情報を取得するヘルパー関数
@@ -426,6 +414,9 @@
       const tag = el.tagName.toLowerCase();
       let field = {};
       field.type = el.type;
+      field.name = el.getAttribute('name') || '';
+      field.class = el.getAttribute('class') || '';
+      
       if (el.type === "checkbox") {
           // チェックボックスの場合、valueとチェック状態を取得
           field.value = el.value;
@@ -535,11 +526,18 @@
       const changes = {};
 
       elements.forEach(el => {
-        const key = el.name; // name属性をキーとして利用
+        const key = el.getAttribute('name'); // name属性を直接取得
         const field = getFieldData(el);
         let originalValue = field.value;
         let newValue = originalValue;
         let appliedRules = [];
+        
+        // デバッグ用ログ追加
+        console.log('Original field data:', {
+            name: field.name,
+            class: field.class,
+            value: field.value
+        });
         
         // 文字列型の値の場合のみ置換ルールを適用
         if (typeof originalValue === "string") {
@@ -581,8 +579,21 @@
         if (substitutedField.hasOwnProperty("value") && typeof substitutedField.value === "string") {
             substitutedField.value = newValue;
         }
-        originalData[key] = field;
-        substitutedData[key] = substitutedField;
+        // classの値を含めるように修正
+        originalData[key] = {
+            ...field,
+            class: field.class
+        };
+        substitutedData[key] = {
+            ...substitutedField,
+            class: field.class
+        };
+
+        // デバッグ用ログ追加
+        console.log('Processed field data:', {
+            original: originalData[key],
+            substituted: substitutedData[key]
+        });
     });
     
 

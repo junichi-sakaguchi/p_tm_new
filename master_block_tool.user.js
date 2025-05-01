@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.3.9
+// @version      0.3.10
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
@@ -192,6 +192,7 @@
         { word: '断り', exclude: ['断りしてきましたが'] },
         { word: 'おりません', exclude: ['行っておりません'] },
         { word: '遠慮', exclude: ['遠慮なく','遠慮せず'] },
+        { word: 'ご遠慮', exclude: ['ご遠慮なく','ご遠慮せず'] },
         '控え',
         { word:'禁止', exclude: ['独占禁止','関与の禁止'] },
         { word:'ありません', exclude: ['必要はありません','必要ありません','過言ではありません','一切ありません','まったくありません','ことはありません','しかありません','ありませんか'] },

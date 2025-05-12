@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Form Checker
 // @namespace    http://tampermonkey.net/
-// @version      1.0.3
+// @version      1.0.4
 // @description  フォームチェッカー
 // @match        *://*/*
 // @grant        none
@@ -417,14 +417,10 @@
       field.name = el.getAttribute('name') || '';
       field.class = el.getAttribute('class') || '';
       
-      if (el.type === "checkbox") {
-          // チェックボックスの場合、valueとチェック状態を取得
-          field.value = el.value;
+      if (el.type === "checkbox" || el.type === "radio") {
+          // チェックボックスとラジオボタンの場合、チェック状態に応じてvalueを設定
           field.checked = el.checked;
-      } else if (el.type === "radio") {
-          // ラジオボタンの場合も同様
-          field.value = el.value;
-          field.checked = el.checked;
+          field.value = el.checked ? el.value : "";
       } else if (tag === "select") {
           // セレクトボックスの場合
           if (el.multiple) {
@@ -458,10 +454,11 @@
       let combinedText = "";
       elements.forEach(el => {
           const fieldData = getFieldData(el);
-          if (fieldData.value) {
-              combinedText += fieldData.value;
-          } else if (fieldData.selectedOptions) {
+          if (fieldData.selectedOptions) {
               combinedText += fieldData.selectedOptions.join("");
+          } else if (fieldData.checked === undefined || fieldData.checked) {
+              // text/select/textarea か「選択済み」のラジオ・チェックだけ追加
+              combinedText += fieldData.value;
           }
       });
 

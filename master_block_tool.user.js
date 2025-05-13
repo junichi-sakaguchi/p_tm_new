@@ -1,11 +1,13 @@
 // ==UserScript==
-// @name         Domain Blocker（開発用）
+// @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.3.12
+// @version      0.3.13
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
 // @grant        none
+// @updateURL    https://github.com/junichi-sakaguchi/p_tm_new/raw/main/master_block_tool.user.js
+// @downloadURL  https://github.com/junichi-sakaguchi/p_tm_new/raw/main/master_block_tool.user.js
 // ==/UserScript==
 
 (function() {

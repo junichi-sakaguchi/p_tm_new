@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.3.20
+// @version      0.3.21
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
@@ -45,7 +45,8 @@
         'carcon.co.jp',
         'yaneiroha.com',
         'www.duskin.jp',
-        'umeda-kotsu-group.jp'
+        'umeda-kotsu-group.jp',
+        'www.q-golf.co.jp'
         // 必要に応じて追加してください
     ];
 

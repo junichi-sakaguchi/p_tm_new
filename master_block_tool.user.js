@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.3.29
+// @version      0.3.30
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*

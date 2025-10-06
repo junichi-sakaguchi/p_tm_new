@@ -6,6 +6,8 @@
 // @match        https://calendar.google.com/*
 // @run-at       document-idle
 // @grant        GM_addStyle
+// @updateURL    https://github.com/junichi-sakaguchi/p_tm_new/raw/main/calendar_copy_noalert.user.js
+// @downloadURL  https://github.com/junichi-sakaguchi/p_tm_new/raw/main/calendar_copy_noalert.user.js
 // ==/UserScript==
 (function () {
   'use strict';

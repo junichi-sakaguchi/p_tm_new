@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remind & Gohonen Buttons Injector (toolbar above container, right-aligned)
 // @namespace    local.sakaguchi.tools
-// @version      1.2.0
+// @version      1.2.1
 // @description  MUI再レンダーに耐える自己修復型ボタン注入＋MUI Select操作対応（ボタンは対象divの上・右寄せ）
 // @match        https://*/*
 // @match        http://*/*
@@ -135,8 +135,10 @@
     const parsed = parseFlexible(input.value);
     if (!parsed) return alert('nextActionAt の形式が不明です（YYYY/MM/DD hh:mm または YYYY-MM-DDTHH:mm）');
 
-    const dt = new Date(parsed.dt.getTime());
+    // 現在の日時から6日後にする
+    const dt = new Date();
     dt.setDate(dt.getDate() + 6);
+
 
     input.focus();
     setReactInputValue(input, fmtBy(dt, parsed.fmt));

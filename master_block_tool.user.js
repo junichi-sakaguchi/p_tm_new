@@ -83,7 +83,8 @@
         'storium.jp',
         'vegemach.alic.go.jp',
         'webdb.tsjiba.or.jp',
-        'bokujob.com'
+        'bokujob.com',
+        'energy-consul.com'
         // 必要に応じて追加してください
     ];
 

@@ -86,6 +86,7 @@
         'bokujob.com',
         'energy-consul.com',
         'nara-namakyo.or.jp'
+        'lupinus.or.jp'
         // 必要に応じて追加してください
     ];
 

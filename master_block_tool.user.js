@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Domain Blocker
 // @namespace    http://tampermonkey.net/
-// @version      0.3.47
+// @version      0.3.48
 // @description  指定したドメインへのアクセスをブロックします
 // @author       plex
 // @match        *://*/*
@@ -89,7 +89,8 @@
         'lupinus.or.jp',
         'seishin50.jp',
         'mokutaikyo.com',
-        '.lg.jp'
+        '.lg.jp',
+        'chiba-ichiba.com'
         // 必要に応じて追加してください
     ];
 
